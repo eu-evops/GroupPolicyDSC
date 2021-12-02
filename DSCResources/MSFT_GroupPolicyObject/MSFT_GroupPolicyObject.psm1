@@ -1,8 +1,7 @@
 $RegistryPath = "HKLM:\Software\Microsoft\DSC"
 $RegistryProperty = "ConfigurationMD5"
 
-function Get-TargetResource
-{
+function Get-TargetResource {
     [CmdletBinding()]
     [OutputType([Hashtable])]
     param
@@ -13,23 +12,27 @@ function Get-TargetResource
 
         [Parameter()]
         [String]
-        $GpoPath,
+        $BackupPath,
 
         [Parameter()]
         [String]
-        $BackupId
+        $BackupId,
+        
+        [Parameter()]
+        [ValidateSet("Present", "Absent")]
+        [System.String]
+        $Ensure = "Present"
     )
 
     return @{
-        Name = $Name
-        GpoPath = $GpoPath
-        BackupId = $BackupId
+        Name             = $Name
+        BackupPath          = $BackupPath
+        BackupId         = $BackupId
         ConfigurationMd5 = (Get-ItemPropertyValue $RegistryPath -Name "${RegistryProperty}_${Name}")
     }
 }
 
-function Set-TargetResource
-{
+function Set-TargetResource {
     [CmdletBinding()]
     param
     (
@@ -39,28 +42,38 @@ function Set-TargetResource
 
         [Parameter()]
         [String]
-        $GpoPath,
+        $BackupPath,
 
         [Parameter()]
         [String]
-        $BackupId
+        $BackupId,
+        
+        [Parameter()]
+        [ValidateSet("Present", "Absent")]
+        [System.String]
+        $Ensure = "Present"
     )
 
-    $gpo = Get-GPO -Name $Name -ErrorAction SilentlyContinue
-    if ($null -eq $gpo) {
-        $gpo = New-GPO -Name $Name 
-    }
+    if ($Ensure -eq 'Present') {
+        $gpo = Get-GPO -Name $Name -ErrorAction SilentlyContinue
+        if ($null -eq $gpo) {
+            $gpo = New-GPO -Name $Name 
+        }
 
-    Write-Verbose "Checking if Gpo needs to be imported: $GpoPath ($($null -eq $GpoPath) $($GpoPath.GetType()))"
-    if (![string]::IsNullOrEmpty($GpoPath)) {
-        Import-GPO -TargetName $gpo.DisplayName -Path $GpoPath -BackupId $BackupId
-        $md5 = Get-FileHash -Algorithm MD5 -Path "${GpoPath}/{${BackupId}}/Backup.xml"
-        Set-ItemProperty -Path $RegistryPath -Name "${RegistryProperty}_${Name}" -Value $md5.Hash
+        Write-Verbose "Checking if Gpo needs to be imported: $BackupPath ($($null -eq $BackupPath) $($BackupPath.GetType()))"
+        if (![string]::IsNullOrEmpty($BackupPath)) {
+            Import-GPO -TargetName $gpo.DisplayName -Path $BackupPath -BackupId $BackupId
+            $md5 = Get-FileHash -Algorithm MD5 -Path "${BackupPath}/{${BackupId}}/Backup.xml"
+            Set-ItemProperty -Path $RegistryPath -Name "${RegistryProperty}_${Name}" -Value $md5.Hash
+        }
+    }
+    else {
+        Remove-GPO -Name $Name
+        Remove-ItemProperty -Path $RegistryPath -Name "${RegistryProperty}_${Name}"
     }
 }
 
-function Test-TargetResource
-{
+function Test-TargetResource {
     [CmdletBinding()]
     [OutputType([Boolean])]
     param
@@ -71,34 +84,43 @@ function Test-TargetResource
 
         [Parameter()]
         [String]
-        $GpoPath,
+        $BackupPath,
 
         [Parameter()]
         [String]
-        $BackupId
+        $BackupId,
+        
+        [Parameter()]
+        [ValidateSet("Present", "Absent")]
+        [System.String]
+        $Ensure = "Present"
     )
 
     if (!(Get-Item $RegistryPath -ErrorAction SilentlyContinue)) {
         New-Item $RegistryPath | Out-Null
     }
-
-    if (!(Get-ItemProperty $RegistryPath -Name "${RegistryProperty}_${Name}" -ErrorAction SilentlyContinue)) {
-        New-ItemProperty $RegistryPath -Name "${RegistryProperty}_${Name}" -Value $null | Out-Null
-    }
-
+    
     $gpo = Get-GPO -Name $Name -ErrorAction SilentlyContinue
-    if ($null -eq $gpo) {
-        return $null -ne $gpo
+
+    if ($Ensure -eq 'Present') {
+        if (!(Get-ItemProperty $RegistryPath -Name "${RegistryProperty}_${Name}" -ErrorAction SilentlyContinue)) {
+            New-ItemProperty $RegistryPath -Name "${RegistryProperty}_${Name}" -Value $null | Out-Null
+        }
+    
+        if ($null -eq $gpo) {
+            return $False
+        }
+    
+        Write-Verbose "Test path: $BackupPath $BackupId $(Test-Path "${BackupPath}/{${BackupId}}") --"
+        if (Test-Path "$BackupPath/{$BackupId}") {
+            $md5 = Get-FileHash -Algorithm MD5 -Path "${BackupPath}/{$BackupId}/Backup.xml"
+            return $md5.Hash -eq (Get-ItemPropertyValue $RegistryPath -Name "${RegistryProperty}_${Name}")
+        }
+    } else {
+        Write-Verbose "GPO: $gpo (Test: $($null -eq $gpo))"
+        return $null -eq $gpo
     }
 
-    Write-Verbose "Test path: $GpoPath $BackupId $(Test-Path "${GpoPath}/{${BackupId}}") --"
-    if (Test-Path "$GpoPath/{$BackupId}") {
-        $md5 = Get-FileHash -Algorithm MD5 -Path "${GpoPath}/{$BackupId}/Backup.xml"
-        Write-Verbose "MD5: $($md5.Hash)"
-        Write-Verbose "NEW MD5: $((Get-ItemPropertyValue $RegistryPath -Name "${RegistryProperty}_${Name}"))"
-        
-        return $md5.Hash -eq (Get-ItemPropertyValue $RegistryPath -Name "${RegistryProperty}_${Name}")
-    }
 
     return $true
 }

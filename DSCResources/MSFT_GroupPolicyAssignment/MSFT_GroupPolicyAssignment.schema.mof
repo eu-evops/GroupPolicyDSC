@@ -1,8 +1,13 @@
 [ClassVersion("1.0.0.0"), FriendlyName("GroupPolicyAssignment")]
 class MSFT_GroupPolicyAssignment : OMI_BaseResource
 {
-    [Required, Description("Name of the GPO policy to create")] String Name;
+    [Required, Description("Name of the GPO policy to create")] String GPOName;
+
     [Required, Description("OU to assign GPO to")] String OUPath;
-    [Description("Flag to indicate whether the policy is enforced")] Boolean Enforced;
-    [Description("Flag to indicate whether the policy is linked")] Boolean Linked = true;
+
+    [Description("Flag to indicate whether the policy is enforced")] String Enforced;
+
+    [Description("Flag to indicate whether the policy is linked")] String LinkEnabled = "Yes";
+    
+    [Write, Description("Desired state of resource."), ValueMap{"Present","Absent"}, Values{"Present","Absent"}] String Ensure;
 };

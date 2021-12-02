@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
-  <dc:creator>Microsoft Corporation</dc:creator>
-  <dc:description>The AuditPolicyDsc module allows you to configure and manage the advanced audit policy on all currently supported versions of Windows.</dc:description>
-  <dc:identifier>AuditPolicyDsc</dc:identifier>
-  <version>1.4.0.0</version>
-  <keywords>DSC DesiredStateConfiguration DSCResourceKit DSCResource AuditPolicy PSModule PSIncludes_DscResource PSDscResource_AuditPolicyCsv PSDscResource_AuditPolicyGUID PSDscResource_AuditPolicyOption PSDscResource_AuditPolicySubcategory</keywords>
-  <lastModifiedBy>NuGet, Version=4.7.1.5, Culture=neutral, PublicKeyToken=31bf3856ad364e35;Microsoft Windows NT 6.2.9200.0;.NET Framework 4.6</lastModifiedBy>
-</coreProperties>

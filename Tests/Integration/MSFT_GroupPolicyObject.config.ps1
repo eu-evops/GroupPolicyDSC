@@ -5,7 +5,7 @@ configuration 'MSFT_GroupPolicyObject_config'
     (
         [Parameter(Mandatory = $true)]
         [System.String]
-        $Name
+        $GPOName
     )
 
     Import-DscResource -ModuleName 'GroupPolicyDSC'
@@ -16,18 +16,23 @@ configuration 'MSFT_GroupPolicyObject_config'
         {
             DebugMode = 'All'
         }
+
         GroupPolicyObject Integration_Test
         {
-            Name  = $Name
-            GpoPath = "$PSScriptRoot/data/gpo"
+            # Ensure = 'Absent'
+            Name  = $GPOName
+            BackupPath = "$PSScriptRoot/data/gpo"
             BackupId = "AB1A03CA-A251-4FDC-9C95-3BFE14EF9A54"
         }
         
-        GroupPolicyObject Integration_Test2
+        GroupPolicyAssignment OUAssignment
         {
-            Name  = "$($Name)2"
-            GpoPath = "$PSScriptRoot/data/gpo"
-            BackupId = "631572F1-2CE9-481D-8FAB-A1553A4DBD56"
+            # Ensure = 'Absent'
+            GPOName  = $GPOName
+            OUPath = "OU=Servers,OU=dev,OU=Sharepoint,DC=testdomain,DC=com"
+            DependsOn = @(
+                "[GroupPolicyObject]Integration_Test"
+            )
         }
     }
 }

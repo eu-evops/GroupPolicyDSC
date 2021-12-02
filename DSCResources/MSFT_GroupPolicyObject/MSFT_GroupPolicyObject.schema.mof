@@ -3,9 +3,11 @@ class MSFT_GroupPolicyObject : OMI_BaseResource
 {
     [Required, Description("Name of the GPO policy to create")] String Name;
 
-    [Description("Path to GPO policy export file to import")] String GPOPath;
+    [Description("Path to GPO policy export file to import")] String BackupPath;
 
     [Description("GUID of the Backup to import from")] String BackupId;
 
     [Description("GUID of the Backup to import from")] String ConfigurationMd5;
+    
+    [Write, Description("Desired state of resource."), ValueMap{"Present","Absent"}, Values{"Present","Absent"}] String Ensure;
 };
